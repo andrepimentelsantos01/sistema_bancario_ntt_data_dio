@@ -11,7 +11,7 @@ class BankingApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF126E68);
+    const primary = Color(0xFF24344D);
 
     return MaterialApp(
       title: 'Minha Conta',
@@ -19,7 +19,7 @@ class BankingApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: primary),
-        scaffoldBackgroundColor: const Color(0xFFF4F7F7),
+        scaffoldBackgroundColor: const Color(0xFFF2F4F8),
         cardTheme: const CardThemeData(
           elevation: 0,
           margin: EdgeInsets.zero,
@@ -29,7 +29,7 @@ class BankingApp extends StatelessWidget {
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFFF5F7F7),
+          fillColor: const Color(0xFFECEFF4),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,

@@ -12,8 +12,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final BankingApi _api = BankingApi();
-  final GlobalKey _statementKey = GlobalKey();
-
   BankState? _account;
   List<BankTransaction> _transactions = [];
   bool _loading = true;
@@ -61,12 +59,9 @@ class _HomePageState extends State<HomePage> {
     final controller = TextEditingController();
     String? inputError;
 
-    final value = await showModalBottomSheet<double>(
+    final value = await showDialog<double>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      showDragHandle: true,
-      builder: (sheetContext) {
+      builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             void submit() {
@@ -80,71 +75,47 @@ class _HomePageState extends State<HomePage> {
                 setSheetState(() => inputError = 'Informe um valor numérico válido.');
                 return;
               }
-              Navigator.pop(sheetContext, parsedValue);
+              Navigator.pop(dialogContext, parsedValue);
             }
 
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                24,
-                8,
-                24,
-                24 + MediaQuery.viewInsetsOf(context).bottom,
-              ),
-              child: Center(
-                heightFactor: 1,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 480),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        isDeposit ? 'Fazer depósito' : 'Fazer saque',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+            return AlertDialog(
+              title: Text(isDeposit ? 'Fazer depósito' : 'Fazer saque'),
+              content: SizedBox(
+                width: 420,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      isDeposit
+                          ? 'Informe o valor que deseja adicionar à conta.'
+                          : 'Informe o valor que deseja retirar da conta.',
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: controller,
+                      autofocus: true,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: isDeposit ? 'Valor do depósito' : 'Valor do saque',
+                        prefixText: 'R\$ ',
+                        errorText: inputError,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        isDeposit
-                            ? 'Informe o valor que deseja adicionar à conta.'
-                            : 'Informe o valor que deseja retirar da conta.',
-                        style: const TextStyle(color: Color(0xFF63706F)),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: controller,
-                        autofocus: true,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(
-                          labelText: isDeposit ? 'Valor do depósito' : 'Valor do saque',
-                          prefixText: 'R\$ ',
-                          errorText: inputError,
-                        ),
-                        onSubmitted: (_) => submit(),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(sheetContext),
-                              child: const Text('Cancelar'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: FilledButton(
-                              onPressed: submit,
-                              child: Text(isDeposit ? 'Depositar' : 'Sacar'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                      onSubmitted: (_) => submit(),
+                    ),
+                  ],
                 ),
               ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: submit,
+                  child: Text(isDeposit ? 'Depositar' : 'Sacar'),
+                ),
+              ],
             );
           },
         );
@@ -174,14 +145,48 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _showStatement() async {
     await _loadData(showLoading: false);
-    final statementContext = _statementKey.currentContext;
-    if (statementContext != null) {
-      await Scrollable.ensureVisible(
-        statementContext,
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOut,
-      );
+    if (!mounted) return;
+    if (_error != null) {
+      _showMessage(_error!, success: false);
+      return;
     }
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Extrato'),
+        content: SizedBox(
+          width: 480,
+          height: MediaQuery.sizeOf(dialogContext).height < 600 ? 240 : 360,
+          child: _transactions.isEmpty
+              ? const Center(child: Text('Não foram realizadas movimentações.'))
+              : ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _transactions.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final transaction = _transactions[_transactions.length - 1 - index];
+                    final deposit = transaction.isDeposit;
+                    return ListTile(
+                      leading: Icon(
+                        deposit ? Icons.south_west_rounded : Icons.north_east_rounded,
+                      ),
+                      title: Text(deposit ? 'Depósito' : 'Saque'),
+                      trailing: Text(
+                        '${deposit ? '+' : '-'} ${_money(transaction.value)}',
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showMessage(String message, {required bool success}) {
@@ -190,7 +195,7 @@ class _HomePageState extends State<HomePage> {
       ..showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: success ? const Color(0xFF126E68) : const Color(0xFFB53B3B),
+          backgroundColor: success ? const Color(0xFF24344D) : const Color(0xFFB53B3B),
         ),
       );
   }
@@ -245,10 +250,10 @@ class _HomePageState extends State<HomePage> {
               width: 48,
               height: 48,
               decoration: const BoxDecoration(
-                color: Color(0xFFD9EEEB),
+                color: Color(0xFFDDE3EC),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFF126E68)),
+              child: const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFF24344D)),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -284,16 +289,16 @@ class _HomePageState extends State<HomePage> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF143C46), Color(0xFF126E68)],
+              colors: [Color(0xFF172235), Color(0xFF344765)],
             ),
             boxShadow: const [
-              BoxShadow(color: Color(0x33205258), blurRadius: 28, offset: Offset(0, 14)),
+              BoxShadow(color: Color(0x33172235), blurRadius: 28, offset: Offset(0, 14)),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Saldo disponível', style: TextStyle(color: Color(0xFFCDE3E1))),
+              const Text('Saldo disponível', style: TextStyle(color: Color(0xFFDDE3EC))),
               const SizedBox(height: 8),
               Text(
                 _money(account.balance),
@@ -361,7 +366,6 @@ class _HomePageState extends State<HomePage> {
         ),
         const SizedBox(height: 34),
         Row(
-          key: _statementKey,
           children: [
             Expanded(
               child: Text(
@@ -426,9 +430,9 @@ class _CardDetail extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: const Color(0xFFCDE3E1), size: 18),
+        Icon(icon, color: const Color(0xFFDDE3EC), size: 18),
         const SizedBox(width: 7),
-        Text(text, style: const TextStyle(color: Color(0xFFE6F2F1), fontSize: 13)),
+        Text(text, style: const TextStyle(color: Color(0xFFECEFF4), fontSize: 13)),
       ],
     );
   }
@@ -443,7 +447,7 @@ class _TransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deposit = transaction.isDeposit;
-    final color = deposit ? const Color(0xFF187E68) : const Color(0xFFC05B39);
+    final color = deposit ? const Color(0xFF344765) : const Color(0xFFC05B39);
 
     return Card(
       child: ListTile(
