@@ -1,0 +1,35 @@
+{
+    "name": "Minha Conta - Sistema Bancário",
+    "short_name": "Minha Conta",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#F4F7F7",
+    "theme_color": "#126E68",
+    "description": "Interface visual do desafio de sistema bancário da DIO.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
