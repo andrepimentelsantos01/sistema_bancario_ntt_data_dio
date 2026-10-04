@@ -1,4 +1,4 @@
-# Sistema Bancário DIO + Flutter
+# Sistema Bancário Python + Flutter
 
 Projeto educacional baseado no desafio de fundamentos de Python da **Trilha Python DIO** no contexto de estudos do bootcamp NTT DATA. A versão de terminal foi preservada e ganhou uma interface Flutter para demonstração visual.
 
